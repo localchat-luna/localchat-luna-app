@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 // 单条消息模型
 struct Message: Identifiable {
@@ -11,6 +12,7 @@ struct Message: Identifiable {
 struct ChatView: View {
     @State private var messages: [Message] = []
     @State private var inputText: String = ""
+    @State private var showFilePicker = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -55,6 +57,26 @@ struct ChatView: View {
             .padding(12)
         }
         .navigationTitle("LocalChat Luna")
+        .toolbar {
+            // 导入按钮
+            Button("导入DeepSeek记录") {
+                showFilePicker = true
+            }
+        }
+        .fileImporter(
+            isPresented: $showFilePicker,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                let url = try result.get().first!
+                let data = try Data(contentsOf: url)
+                let importedMsg = try ImportManager.parseDeepSeekJSON(data: data)
+                messages.append(contentsOf: importedMsg)
+            } catch {
+                print("导入失败：\(error)")
+            }
+        }
     }
     
     func sendMessage() {
